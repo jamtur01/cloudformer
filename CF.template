@@ -1,0 +1,106 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+
+  "Description" : "Bootstrap Demo",
+
+  "Parameters": {
+    "KeyName": {
+      "Default": "aws",
+      "Description" : "Name of an existing EC2 KeyPair to enable SSH access",
+      "Type": "String"
+    },
+    "InstanceType": {
+      "Default": "m1.large",
+      "Description" : "The type of EC2 instances used for the server",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "EC2SecurityGroup": {
+      "Properties": {
+        "SecurityGroupIngress": [
+          {
+            "FromPort": "22",
+            "CidrIp": "0.0.0.0/0",
+            "ToPort": "22",
+            "IpProtocol": "tcp"
+          },
+          {
+            "FromPort": "80",
+            "CidrIp": "0.0.0.0/0",
+            "ToPort": "80",
+            "IpProtocol": "tcp"
+          }
+        ],
+        "GroupDescription": "SSH & HTTP access"
+      },
+      "Type": "AWS::EC2::SecurityGroup"
+    },
+    "Ec2Instance": {
+      "Properties": {
+        "SecurityGroups": [
+          {
+            "Ref": "EC2SecurityGroup"
+          }
+        ],
+        "ImageId": {
+          "Fn::FindInMap": [
+            "AWSRegionArch2AMI",
+            {
+              "Ref": "AWS::Region"
+            },
+            {
+              "Fn::FindInMap": [
+                "AWSInstanceType2Arch",
+                {
+                  "Ref": "InstanceType"
+                },
+                "Arch"
+              ]
+            }
+          ]
+        },
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                <%= bootstrap_script.to_json %>
+              ]
+            ]
+          }        
+
+        },
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "InstanceType": {
+          "Ref": "InstanceType"
+        }
+      },
+      "Type": "AWS::EC2::Instance"
+    }
+  },
+  "Description": "Elastic BI",
+  "Mappings": {
+    "AWSInstanceType2Arch" : {
+      "m1.micro"    : { "Arch" : "64" },
+      "m1.large"    : { "Arch" : "64" },
+      "m1.xlarge"   : { "Arch" : "64" },
+      "m2.xlarge"   : { "Arch" : "64" },
+      "m2.2xlarge"  : { "Arch" : "64" },
+      "m2.4xlarge"  : { "Arch" : "64" },
+      "c1.xlarge"   : { "Arch" : "64" },
+      "cc1.4xlarge" : { "Arch" : "64" }
+    },
+    "AWSRegionArch2AMI" : {
+      "us-east-1" : { "64" : "ami-08f40561" }
+    }
+  },
+  "Outputs" : {
+    "PublicIP" : {
+      "Description" : "Public IP address of the newly created EC2 instance",
+      "Value" : { "Fn::GetAtt" : [ "Ec2Instance", "PublicIp" ] }
+    }
+  }
+}

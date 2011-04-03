@@ -1,0 +1,8 @@
+bootstrap_script =  ERB.new(bootstrap_template).result(binding).to_s
+
+cf_template_erb = IO.read("./CF.template")
+cf_template = ERB.new(cf_template_erb).result(binding)
+
+template_file = File.new("elasticBICF.template",'w')
+template_file.puts cf_template
+template_file.close
